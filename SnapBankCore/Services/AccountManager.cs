@@ -11,6 +11,10 @@ namespace SnapBankCore.Services
     public interface IAccountManager
     {
         string LoginToAccount(string iban, string secret);
+        BankAccount GetBankAccountByCredentials(AuthenticatedOperation op);
+        Currency GetBalanceByCredentials(AuthenticatedOperation op);
+        BankTransaction CashOperation(CashOperation cashOperation);
+        BankTransaction InterbankTransfer(TransferOperation transferOperation);
     }
 
     public class AccountManager : IAccountManager
@@ -69,6 +73,15 @@ namespace SnapBankCore.Services
                 if (!IsIbanReal(cashOperation.ToIban))
                 {
                     throw new Exception("Iban does not exist in the bank, you can only do inner bank cash transfer.");
+                }
+
+                if (cashOperation.OperationType == CashOperationType.Withdraw)
+                {
+                    var balance = GetBalanceOfAccount(initiaterAccount);
+                    if (balance < cashOperation.Money)
+                    {
+                        throw new Exception("Insuficient fundz.");
+                    }
                 }
 
                 var fromCashTransaction = new BankTransaction()
@@ -147,6 +160,12 @@ namespace SnapBankCore.Services
             var balance = account.TransactionHistory.Sum(x =>
                 (x.Direction == TransactionDirection.Incoming ? 1 : -1) * x.Money.Amount);
             return new Currency(){Amount = balance};
+        }
+
+        public BankAccount GetBankAccountByCredentials(AuthenticatedOperation op)
+        {
+            var initiaterAccount = _accountRepository.GetBankAccountByLastToken(op.Token);
+            return initiaterAccount;
         }
     }
 }

@@ -9,7 +9,8 @@ namespace SnapBank.Core.Models
     public enum TransactionDirection
     {
         Incoming,
-        Outgoing
+        Outgoing,
+        Any
     }
 
     public enum TransactionType
